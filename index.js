@@ -11,7 +11,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json({limit: "30mb", extended: true}));
 const server = app.listen(3000);
-const socket = new Server(server);
+const socket = new Server(server, {cors: {origin: '*'}});
 const __dirname = path.resolve();
 
 const securityMiddleware = (req, res, next) => {
