@@ -14,15 +14,15 @@ const server = app.listen(3000);
 const socket = new Server(server);
 const __dirname = path.resolve();
 
-app.use((req, res, next) => {
+const securityMiddleware = (req, res, next) => {
     if (req.headers.token === backendToken) {
         next();
     } else {
         res.status(401).send();
     }
-})
+}
 
-app.get('/create-room', (req, res) => {
+app.get('/create-room', securityMiddleware, (req, res) => {
     const room = req.query.room;
     if (!availableRooms.includes(room)) {
         availableRooms.push(room);
@@ -30,7 +30,7 @@ app.get('/create-room', (req, res) => {
     res.send({message: 'room created'});
 })
 
-app.get('/delete-room', (req, res) => {
+app.get('/delete-room', securityMiddleware, (req, res) => {
     const room = req.query.room;
     if (availableRooms.includes(room)) {
         availableRooms.splice(availableRooms.indexOf(room), 1);
@@ -39,7 +39,7 @@ app.get('/delete-room', (req, res) => {
     res.send({message: 'room deleted'});
 })
 
-app.post('/message', (req, res) => {
+app.post('/message', securityMiddleware, (req, res) => {
     const room = req.body.room ?? 'default';
     const type = req.body.type ?? 'message';
     const message = req.body.message ?? '';
