@@ -1,6 +1,5 @@
 import express from 'express';
 import {Server} from 'socket.io';
-import * as path from "path";
 import cors from 'cors';
 import bodyParser from "body-parser";
 
@@ -12,7 +11,6 @@ app.use(cors());
 app.use(bodyParser.json({limit: "30mb", extended: true}));
 const server = app.listen(3000);
 const socket = new Server(server, {cors: {origin: '*'}});
-const __dirname = path.resolve();
 
 const securityMiddleware = (req, res, next) => {
     if (req.headers.token === backendToken) {
@@ -55,14 +53,26 @@ app.post('/message', securityMiddleware, (req, res) => {
 
 socket.on('connection', (socket) => {
     const header = socket.handshake.headers;
+    let room = header.room;
     if (header.room && availableRooms.includes(header.room)) {
         socket.join(header.room);
     } else {
         socket.disconnect();
     }
 
+    const connectionMessage = {
+        user: socket.id,
+        total: socket.in(room).adapter.rooms.get(room).size
+    }
+
+    socket.to(room).emit('user-connected', connectionMessage)
+    socket.emit('user-connected', connectionMessage)
+
     socket.on('message', (data) => {
         socket.to(data.room).emit(data.type ?? 'message', data.message);
+    })
+    socket.on('disconnect', () => {
+        socket.to(room).emit('user-disconnected', {status: true, total: socket.in(room).adapter.rooms.get(room).size})
     })
 });
 
