@@ -58,11 +58,19 @@ socket.on('connection', (socket) => {
         socket.join(header.room);
     } else {
         socket.disconnect();
+        return;
+    }
+
+    let total = 0;
+    try {
+        total = socket.in(room).adapter.rooms.get(room).size;
+    } catch (e) {
+
     }
 
     const connectionMessage = {
         user: socket.id,
-        total: socket.in(room).adapter.rooms.get(room).size
+        total
     }
 
     socket.to(room).emit('user-connected', connectionMessage)
@@ -72,7 +80,13 @@ socket.on('connection', (socket) => {
         socket.to(data.room).emit(data.type ?? 'message', data.message);
     })
     socket.on('disconnect', () => {
-        socket.to(room).emit('user-disconnected', {status: true, total: socket.in(room).adapter.rooms.get(room).size})
+        let total = 0;
+        try {
+            total = socket.in(room).adapter.rooms.get(room).size;
+        } catch (e) {
+
+        }
+        socket.to(room).emit('user-disconnected', {status: true, total})
     })
 });
 
