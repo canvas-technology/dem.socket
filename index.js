@@ -4,7 +4,7 @@ import cors from 'cors';
 import bodyParser from "body-parser";
 
 const backendToken = '9985530a-429f-4840-8250-df6154a785b0';
-const availableRooms = [];
+const availableRooms = ['info'];
 
 const app = express();
 app.use(cors());
@@ -22,6 +22,14 @@ const securityMiddleware = (req, res, next) => {
 
 app.get('/create-room', securityMiddleware, (req, res) => {
     const room = req.query.room;
+    if (!availableRooms.includes(room)) {
+        availableRooms.push(room);
+    }
+    res.send({message: 'room created'});
+})
+
+app.post('/create-room', (req, res) => {
+    const room = req.body.room;
     if (!availableRooms.includes(room)) {
         availableRooms.push(room);
     }
@@ -56,6 +64,16 @@ socket.on('connection', (socket) => {
     let room = header.room;
     if (header.room && availableRooms.includes(header.room)) {
         socket.join(header.room);
+        let rooms = Array.from(socket.adapter.rooms.keys());
+        const sids = Array.from(socket.adapter.sids.keys());
+        rooms = rooms.filter(room => !sids.includes(room));
+        const data = [];
+        for (const room of rooms) {
+            const total = socket.in(room).adapter.rooms.get(room).size;
+            data.push({room, total});
+        }
+        socket.to('info').emit('room-info', data);
+        socket.emit('room-info', data);
     } else {
         socket.disconnect();
         return;
